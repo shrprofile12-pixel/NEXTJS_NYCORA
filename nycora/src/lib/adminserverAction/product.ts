@@ -1,10 +1,11 @@
-// src/actions/product.ts
+// src/lib/adminserverAction/product.ts
 "use server"
 
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
+import { redirect } from "next/navigation"
 
-// Helper function slug banane ke liye (e.g., "Silk Suit" -> "silk-suit")
+// Helper function slug banane ke liye
 function generateSlug(name: string) {
   return name
     .toLowerCase()
@@ -22,17 +23,15 @@ export async function createProduct(formData: FormData) {
   const comparePrice = formData.get("comparePrice") ? parseFloat(formData.get("comparePrice") as string) : null
   const stock = parseInt(formData.get("stock") as string) || 0
   const categoryId = formData.get("categoryId") as string
-  const imageUrl = formData.get("imageUrl") as string // Agar single image hai ya ProductImage relation hai
+  const imageUrl = formData.get("imageUrl") as string
   const isFeatured = formData.get("isFeatured") === "on"
   const isPublished = formData.get("isPublished") === "on"
 
-  // Unique slug generate karein naam se
   let slug = generateSlug(name)
   
-  // Check karein ke slug pehle se toh mojood nahi
   const existingProduct = await prisma.product.findUnique({ where: { slug } })
   if (existingProduct) {
-    slug = `${slug}-${Date.now()}` // Agar pehle se hai toh sath timestamp laga dein
+    slug = `${slug}-${Date.now()}`
   }
 
   try {
@@ -47,37 +46,97 @@ export async function createProduct(formData: FormData) {
         categoryId,
         isFeatured,
         isPublished,
-        // Agar aapki images table alag hai (ProductImage), toh is tarah connect kar sakte hain:
         images: imageUrl ? {
           create: {
             url: imageUrl,
-            isMain: true,
+            position: 0,
           }
         } : undefined,
       },
     })
 
-    revalidatePath("/admin/products")
+    revalidatePath("/product")
     revalidatePath("/shop")
     return { success: true, message: "Product created successfully!" }
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error creating product:", error)
     return { success: false, message: "Failed to create product." }
   }
 }
 
-// 2. Delete Product
+// 2. Update Product
+export async function updateProduct(id: string, formData: FormData) {
+  try {
+    const name = formData.get("name") as string
+    const description = formData.get("description") as string
+    const price = parseFloat(formData.get("price") as string) || 0
+    const comparePrice = formData.get("comparePrice") ? parseFloat(formData.get("comparePrice") as string) : null
+    const stock = parseInt(formData.get("stock") as string) || 0
+    const categoryId = formData.get("categoryId") as string
+    const imageUrl = formData.get("imageUrl") as string
+    const isFeatured = formData.get("isFeatured") === "on"
+    const isPublished = formData.get("isPublished") === "on"
+
+    let slug = generateSlug(name)
+    
+    const existingProduct = await prisma.product.findFirst({
+      where: { 
+        slug,
+        NOT: { id } 
+      }
+    })
+    if (existingProduct) {
+      slug = `${slug}-${Date.now()}`
+    }
+
+    await prisma.product.update({
+      where: { id },
+      data: {
+        name,
+        slug,
+        description,
+        price,
+        comparePrice,
+        stock,
+        categoryId,
+        isFeatured,
+        isPublished,
+        images: imageUrl ? {
+          deleteMany: {},
+          create: {
+            url: imageUrl,
+            position: 0,
+          }
+        } : undefined,
+      },
+    })
+
+    revalidatePath("/product")
+    revalidatePath("/shop")
+    return { success: true, message: "Product updated successfully!" }
+  } catch (error: any) {
+    console.error("EXACT UPDATE ERROR:", error.message || error)
+    return { success: false, message: `Failed to update product: ${error.message}` }
+  }
+}
+
+// 3. Delete Product
 export async function deleteProduct(id: string) {
   try {
+    await prisma.productImage.deleteMany({ where: { productId: id } }).catch(() => {})
+    await prisma.productVariant.deleteMany({ where: { productId: id } }).catch(() => {})
+    
     await prisma.product.delete({
       where: { id },
     })
 
-    revalidatePath("/admin/products")
+    revalidatePath("/product")
     revalidatePath("/shop")
-    return { success: true, message: "Product deleted successfully!" }
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error deleting product:", error)
-    return { success: false, message: "Failed to delete product." }
+    return { success: false, message: `Failed to delete product: ${error.message}` }
   }
+
+  // Delete successful hone ke baad user ko products list par redirect kar dein
+  redirect("/product")
 }

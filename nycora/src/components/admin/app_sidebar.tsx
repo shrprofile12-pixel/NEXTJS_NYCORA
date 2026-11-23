@@ -1,6 +1,13 @@
 // src/components/admin/app_sidebar.tsx
 "use client"
-
+import {
+  DropdownMenu,
+  
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu"
 import * as React from "react"
 import Link from "next/link"
 import { 
@@ -8,7 +15,8 @@ import {
   Layers, 
   Image as ImageIcon, 
   Package, 
-  Users 
+  Users, 
+  User2
 } from "lucide-react"
 
 import {
@@ -21,7 +29,11 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  SidebarFooter,
 } from "@/components/ui/sidebar"
+import { FaChevronDown } from "react-icons/fa6"
+import { DropdownMenuTrigger } from "../ui/dropdown-menu"
+import { Button } from "../ui/button"
 
 // Menu items
 const items = [
@@ -65,8 +77,9 @@ export function AppSidebar() {
             <SidebarMenu>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <Link href={item.url} className="flex items-center gap-3 font-medium">
+                  {/* asChild hata kar Link ko direct use kiya gaya hai */}
+                  <SidebarMenuButton asChild={false} className="w-full">
+                    <Link href={item.url} className="flex items-center gap-3 font-medium w-full">
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
                     </Link>
@@ -77,6 +90,31 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+
+
+     {/* Footer */}
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <DropdownMenu>
+              {/* Note: If your shadcn uses Radix instead of Base UI, replace `render={<SidebarMenuButton />}` with `asChild` and keep `<SidebarMenuButton>` inside */}
+              <DropdownMenuTrigger render={<SidebarMenuButton />}>
+                <User2 />
+                <span>Username</span>
+                <FaChevronDown className="ml-auto" />
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent className="w-56" align="end">
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuItem>Profile</DropdownMenuItem>
+                  <DropdownMenuItem>Billing</DropdownMenuItem>
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
     </Sidebar>
   )
 }
