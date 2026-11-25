@@ -1,32 +1,27 @@
+"use client";
+
 import React from "react";
-import Link from "next/link";
 import ULIST from "./NavbarComponents/ULIST";
 import Logo from "./NavbarComponents/Logo";
+import UserAvatar from "./UserAvatar"; // path apne folder ke mutabiq adjust karein
 import { FaSearch } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
 
 const Navbar = () => {
   return (
-    // 💡 'relative' ki jagah 'absolute top-0 left-0 w-full z-50' kar diya hai
-    // Isse navbar transparently carousel ke upar float karega
-    <header className="absolute top-8 left-0 w-full h-28 z-50 overflow-hidden bg-transparent">
-      
+    <header className="absolute top-8 left-0 z-50 h-28 w-full bg-transparent">
       {/* ==============================
           BACKGROUND — 50% / 50%
       ============================== */}
-      <div className="absolute inset-0 flex">
-        {/* LEFT 50% */}
-        <div className="h-full w-1/2 " />
-
-        {/* RIGHT 50% */}
-        <div className="h-full w-1/2 " />
+      <div className="pointer-events-none absolute inset-0 flex">
+        <div className="h-full w-1/2" />
+        <div className="h-full w-1/2" />
       </div>
 
       {/* ==============================
           NAVBAR CONTENT
       ============================== */}
       <div className="relative z-10 flex h-full items-center px-12">
-
         {/* Logo */}
         <div className="shrink-0 text-black">
           <Logo />
@@ -39,7 +34,6 @@ const Navbar = () => {
 
         {/* Right actions */}
         <div className="ml-auto flex items-center gap-5">
-          
           {/* Search */}
           <Button
             variant="outline"
@@ -49,18 +43,13 @@ const Navbar = () => {
             <FaSearch className="text-[#07150d]" />
           </Button>
 
-          {/* Sign In */}
-          <Link href="/signin">
-            <Button className="rounded-lg bg-[#07150d] px-7 py-4 text-white hover:bg-[#14291a]">
-              Sign In
-            </Button>
-          </Link>
-
+          {/* User Avatar / Sign In */}
+          <UserAvatar />
         </div>
       </div>
 
-      {/* Bottom line like your reference */}
-      <div className="absolute bottom-0 left-12 right-12 z-10 h-px bg-white/30" />
+      {/* Bottom line */}
+      <div className="absolute right-12 bottom-0 left-12 z-10 h-px bg-white/30" />
     </header>
   );
 };

@@ -61,7 +61,7 @@ export default async function Home() {
 
       <FilterProducts products={formattedProducts} />
       <Categories />
-      <AddProductForm categories={categories} />
+      {/* <AddProductForm categories={categories} /> */}
     </>
   );
 }

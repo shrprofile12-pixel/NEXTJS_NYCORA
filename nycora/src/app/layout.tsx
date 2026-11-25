@@ -1,9 +1,9 @@
-// src/app/layout.tsx
 import type { Metadata } from "next";
 import "./globals.css";
 import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
 import { extractRouterConfig } from "uploadthing/server";
 import { ourFileRouter } from "@/app/api/uploadthing/core";
+import Providers from "@/components/Providers";
 
 export const metadata: Metadata = {
   title: "NYCORA",
@@ -18,11 +18,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        {/* 💡 NextSSRPlugin yahan root layout mein hona chahiye */}
-        <NextSSRPlugin
-          routerConfig={extractRouterConfig(ourFileRouter)}
-        />
-        {children}
+        <NextSSRPlugin routerConfig={extractRouterConfig(ourFileRouter)} />
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

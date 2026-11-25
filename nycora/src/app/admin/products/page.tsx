@@ -1,5 +1,10 @@
-import Image from "next/image"
-import { prisma } from "@/lib/prisma" // Apne prisma client instance ka sahi path check kar lein (e.g., @/lib/db ya @/prisma)
+import React from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { prisma } from "@/lib/prisma";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -7,20 +12,20 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, ChevronLeft, ChevronRight, Plus } from "lucide-react"
-import Link from "next/link"
+} from "@/components/ui/table";
+import ProductRowActions from "@/components/ProductRowActions";
+import AddProductForm from "@/components/admin/AddProductForm";
+const FALLBACK_IMAGE = "/Bag.png";
+
+const dateFormatter = new Intl.DateTimeFormat("en-GB", {
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+});
+
+const numberFormatter = new Intl.NumberFormat("en-PK");
 
 export default async function ProductPage() {
-  // 1. Database se products, unki category aur pehli image fetch karein
   const products = await prisma.product.findMany({
     include: {
       category: true,
@@ -32,28 +37,25 @@ export default async function ProductPage() {
     orderBy: {
       createdAt: "desc",
     },
-  })
+  });
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="w-full bg-white rounded-xl p-6 border shadow-sm">
-        {/* Table Header Title & Add Button */}
-        <div className="flex items-center justify-between mb-6">
+    <div className="mx-auto max-w-7xl p-6">
+      <div className="w-full rounded-xl border bg-white p-6 shadow-sm">
+        <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
-            <h2 className="font-semibold text-lg text-gray-900">
+            <span className="h-2.5 w-2.5 rounded-full bg-blue-600" aria-hidden="true" />
+            <h2 className="text-lg font-semibold text-gray-900">
               All Products ({products.length})
             </h2>
           </div>
 
-          <Button asChild size="sm" className="gap-1">
-            <Link href="/product/new">
-              <Plus className="h-4 w-4" /> Add Product
-            </Link>
+          <Button render={<Link href="/product/new" />} size="sm" className="gap-1">
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            Add Product
           </Button>
         </div>
 
-        {/* Shadcn Table */}
         <div className="rounded-md border">
           <Table>
             <TableHeader>
@@ -67,45 +69,35 @@ export default async function ProductPage() {
                 <TableHead className="text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
+
             <TableBody>
               {products.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-10 text-gray-500">
+                  <TableCell colSpan={7} className="py-10 text-center text-gray-500">
                     No products found in database. Run your seed script or add a product!
                   </TableCell>
                 </TableRow>
               ) : (
                 products.map((item) => {
-                  // Image fallback agar database mein image na ho
-                  const imageUrl = item.images[0]?.url || "/Bag.png"
-
-                  // Status logic based on stock
-                  const status =
-                    item.stock > 0
-                      ? "Published"
-                      : "Out of Stock"
-
-                  // Date formatting (e.g., 18 Nov 2026)
-                  const formattedDate = new Date(item.createdAt).toLocaleDateString("en-GB", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                  })
+                  const imageUrl = item.images[0]?.url || FALLBACK_IMAGE;
+                  const isPublished = item.stock > 0;
+                  const statusLabel = isPublished ? "Published" : "Out of Stock";
+                  const formattedDate = dateFormatter.format(new Date(item.createdAt));
 
                   return (
                     <TableRow key={item.id}>
-                      {/* Product Name, Image & Review/Stock Count */}
                       <TableCell className="flex items-center gap-3 font-medium">
-                        <div className="w-11 h-11 relative rounded-lg bg-gray-100 overflow-hidden flex-shrink-0 border">
+                        <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border bg-gray-100">
                           <Image
                             src={imageUrl}
                             alt={item.name}
                             fill
+                            sizes="44px"
                             className="object-cover"
                           />
                         </div>
-                        <div>
-                          <p className="text-gray-900 font-medium line-clamp-1">
+                        <div className="min-w-0">
+                          <p className="line-clamp-1 font-medium text-gray-900">
                             {item.name}
                           </p>
                           <p className="text-xs text-gray-400">
@@ -114,89 +106,66 @@ export default async function ProductPage() {
                         </div>
                       </TableCell>
 
-                      {/* Category Name */}
                       <TableCell className="text-gray-600">
                         {item.category?.name || "Uncategorized"}
                       </TableCell>
 
-                      {/* Shortened ID (e.g., #CM3X...) */}
-                      <TableCell className="text-gray-500 font-mono text-xs">
+                      <TableCell className="font-mono text-xs text-gray-500">
                         #{item.id.slice(-6).toUpperCase()}
                       </TableCell>
 
-                      {/* Price in PKR */}
                       <TableCell className="font-semibold text-gray-900">
-                        Rs. {item.price.toLocaleString()}
+                        Rs. {numberFormatter.format(item.price)}
                       </TableCell>
 
-                      {/* Created At */}
-                      <TableCell className="text-gray-500 text-sm">
+                      <TableCell className="text-sm text-gray-500">
                         {formattedDate}
                       </TableCell>
 
-                      {/* Status Badge */}
                       <TableCell>
                         <Badge
                           variant="outline"
-                          className={`px-3 py-1 rounded-full text-xs font-medium border-0 ${
-                            status === "Published"
+                          className={`rounded-full border-0 px-3 py-1 text-xs font-medium ${
+                            isPublished
                               ? "bg-emerald-50 text-emerald-600"
                               : "bg-rose-50 text-rose-500"
                           }`}
                         >
-                          {status}
+                          {statusLabel}
                         </Badge>
                       </TableCell>
 
-                      {/* Action 3-Dots Dropdown */}
                       <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              className="h-8 w-8 p-0 rounded-full bg-gray-50 hover:bg-gray-100"
-                            >
-                              <MoreHorizontal className="h-4 w-4 text-gray-500" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem asChild>
-                              <Link href={`/product/${item.slug}`}>View Details</Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem asChild>
-                              <Link href={`/product/edit/${item.id}`}>Edit Product</Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600">
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <ProductRowActions
+                          productId={item.id}
+                          productSlug={item.slug}
+                          productName={item.name}
+                        />
                       </TableCell>
                     </TableRow>
-                  )
+                  );
                 })
               )}
             </TableBody>
           </Table>
         </div>
 
-        {/* Pagination Footer */}
-        <div className="flex items-center justify-between mt-4">
+        <div className="mt-4 flex items-center justify-between">
           <div className="flex items-center gap-1">
-            <Button variant="outline" size="sm" className="h-8 w-8 p-0 bg-gray-900 text-white">
+            <Button variant="outline" size="sm" className="h-8 w-8 bg-gray-900 p-0 text-white">
               1
             </Button>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="icon" className="h-8 w-8" disabled>
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-4 w-4" aria-hidden="true" />
             </Button>
             <Button variant="outline" size="icon" className="h-8 w-8" disabled>
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-4 w-4" aria-hidden="true" />
             </Button>
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -123,20 +123,21 @@ export async function updateProduct(id: string, formData: FormData) {
 // 3. Delete Product
 export async function deleteProduct(id: string) {
   try {
-    await prisma.productImage.deleteMany({ where: { productId: id } }).catch(() => {})
-    await prisma.productVariant.deleteMany({ where: { productId: id } }).catch(() => {})
-    
-    await prisma.product.delete({
-      where: { id },
-    })
+    await prisma.$transaction([
+      prisma.productImage.deleteMany({ where: { productId: id } }),
+      prisma.productVariant.deleteMany({ where: { productId: id } }),
+      prisma.product.delete({ where: { id } }),
+    ]);
 
-    revalidatePath("/product")
-    revalidatePath("/shop")
-  } catch (error: any) {
-    console.error("Error deleting product:", error)
-    return { success: false, message: `Failed to delete product: ${error.message}` }
+    revalidatePath("/product");
+    revalidatePath("/shop");
+    return { success: true, message: "Product deleted successfully." };
+  } catch (error: unknown) {
+    console.error("Error deleting product:", error);
+
+    const message =
+      error instanceof Error ? error.message : "Failed to delete product.";
+
+    return { success: false, message };
   }
-
-  // Delete successful hone ke baad user ko products list par redirect kar dein
-  redirect("/product")
 }
